@@ -53,7 +53,15 @@ const login = async (req, res) => {
     { expiresIn: "7d" }
   );
 
-  res.json({ token });
+  res.json({
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role
+    },
+    token
+  });
 };
 
 module.exports = { register, login };

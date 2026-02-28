@@ -1,26 +1,45 @@
 const express = require("express");
 const router = express.Router();
 const supabase = require("../config/supabase");
+const protect = require("../middleware/authMiddleware");
 
-router.get("/", async (req, res) => {
-  const { data } = await supabase
-    .from("users")
-    .select("email, bio, interests")
-    .eq("id", req.user.id)
-    .single();
+// ===============================
+// Get My Profile
+// ===============================
+router.get("/", protect, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("id, name, email, bio, interests")
+      .eq("id", req.user.id)
+      .single();
 
-  res.json(data);
+    if (error) return res.status(400).json(error);
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
-router.put("/", async (req, res) => {
-  const { bio, interests } = req.body;
+// ===============================
+// Update Profile
+// ===============================
+router.put("/", protect, async (req, res) => {
+  try {
+    const { bio, interests } = req.body;
 
-  await supabase
-    .from("users")
-    .update({ bio, interests })
-    .eq("id", req.user.id);
+    const { error } = await supabase
+      .from("users")
+      .update({ bio, interests })
+      .eq("id", req.user.id);
 
-  res.json({ message: "Profile updated" });
+    if (error) return res.status(400).json(error);
+
+    res.json({ message: "Profile updated" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 module.exports = router;

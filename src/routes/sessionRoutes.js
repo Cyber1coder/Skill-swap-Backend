@@ -8,7 +8,16 @@ const protect = require("../middleware/authMiddleware");
 // ===============================
 router.post("/", protect, async (req, res) => {
   try {
-    const { partner_id, skill_topic, session_date, duration_minutes } = req.body;
+    const {
+      partner_id,
+      skill_topic,
+      session_date,
+      duration_minutes,
+      session_type,
+      mode,
+      location,
+      meeting_link
+    } = req.body;
 
     const { data, error } = await supabase
       .from("sessions")
@@ -19,6 +28,10 @@ router.post("/", protect, async (req, res) => {
           skill_topic,
           session_date,
           duration_minutes,
+          session_type: session_type || "one-on-one",
+          mode: mode || "virtual",
+          location: mode === "in-person" ? location : null,
+          meeting_link: mode === "virtual" ? meeting_link : null,
           status: "pending"
         }
       ])
@@ -27,7 +40,6 @@ router.post("/", protect, async (req, res) => {
     if (error) return res.status(400).json(error);
 
     res.json(data[0]);
-
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
