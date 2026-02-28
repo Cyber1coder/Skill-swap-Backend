@@ -13,6 +13,29 @@ const createRating = async (req, res) => {
       return res.status(400).json({ message: "Rating must be 1-5" });
     }
 
+    // Check session exists & completed
+    const { data: session } = await supabase
+      .from("sessions")
+      .select("*")
+      .eq("id", session_id)
+      .single();
+
+    if (!session || session.status !== "completed") {
+      return res.status(400).json({ message: "Session not completed" });
+    }
+
+    // Prevent duplicate rating
+    const { data: existing } = await supabase
+      .from("ratings")
+      .select("*")
+      .eq("session_id", session_id)
+      .eq("reviewer_id", reviewerId)
+      .maybeSingle();
+
+    if (existing) {
+      return res.status(400).json({ message: "Already rated" });
+    }
+
     const { data, error } = await supabase
       .from("ratings")
       .insert([
