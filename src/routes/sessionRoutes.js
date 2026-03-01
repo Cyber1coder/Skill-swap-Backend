@@ -56,23 +56,25 @@ router.post("/", protect, async (req, res) => {
 // ===============================
 router.get("/", protect, async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const { data: sessions, error } = await supabase
       .from("sessions")
-      .select(`
-        *,
-        ratings (
-          id,
-          rating,
-          feedback,
-          reviewer_id
-        )
-      `)
+      .select("*")
       .or(`requester_id.eq.${req.user.id},partner_id.eq.${req.user.id}`)
       .order("created_at", { ascending: false });
 
     if (error) return res.status(400).json(error);
 
-    res.json(data);
+    // Fetch ratings separately
+    const { data: ratings } = await supabase
+      .from("ratings")
+      .select("*");
+
+    const sessionsWithRatings = sessions.map(session => ({
+      ...session,
+      ratings: ratings.filter(r => r.session_id === session.id)
+    }));
+
+    res.json(sessionsWithRatings);
 
   } catch (err) {
     res.status(500).json({ message: "Server error" });
