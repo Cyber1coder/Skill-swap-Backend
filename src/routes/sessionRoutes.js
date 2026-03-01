@@ -6,7 +6,6 @@ const protect = require("../middleware/authMiddleware");
 // ===============================
 // Create Session
 // ===============================
-
 router.post("/", protect, async (req, res) => {
   try {
     const {
@@ -53,13 +52,21 @@ router.post("/", protect, async (req, res) => {
 });
 
 // ===============================
-// Get My Sessions
+// Get My Sessions (With Ratings)
 // ===============================
 router.get("/", protect, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("sessions")
-      .select("*")
+      .select(`
+        *,
+        ratings (
+          id,
+          rating,
+          feedback,
+          reviewer_id
+        )
+      `)
       .or(`requester_id.eq.${req.user.id},partner_id.eq.${req.user.id}`)
       .order("created_at", { ascending: false });
 
@@ -84,7 +91,6 @@ router.patch("/:id", protect, async (req, res) => {
       return res.status(400).json({ message: "Invalid status" });
     }
 
-    // Get session first
     const { data: session, error: fetchError } = await supabase
       .from("sessions")
       .select("*")
@@ -95,36 +101,34 @@ router.patch("/:id", protect, async (req, res) => {
       return res.status(404).json({ message: "Session not found" });
     }
 
-    // Permission logic
     if (
-      status === "accepted" || status === "rejected"
+      (status === "accepted" || status === "rejected") &&
+      String(session.partner_id) !== String(req.user.id)
     ) {
-      if (session.partner_id !== req.user.id) {
-        return res.status(403).json({ message: "Not authorized" });
-      }
+      return res.status(403).json({ message: "Not authorized" });
     }
 
-    if (status === "cancelled") {
-      if (session.requester_id !== req.user.id) {
-        return res.status(403).json({ message: "Not authorized" });
-      }
+    if (
+      status === "cancelled" &&
+      String(session.requester_id) !== String(req.user.id)
+    ) {
+      return res.status(403).json({ message: "Not authorized" });
     }
 
-    if (status === "completed") {
-      if (session.status !== "accepted") {
-        return res.status(400).json({ message: "Session must be accepted first" });
-      }
+    if (status === "completed" && session.status !== "accepted") {
+      return res.status(400).json({ message: "Session must be accepted first" });
     }
 
     const { data, error } = await supabase
       .from("sessions")
       .update({ status })
       .eq("id", req.params.id)
-      .select();
+      .select()
+      .single();
 
     if (error) return res.status(400).json(error);
 
-    res.json(data[0]);
+    res.json(data);
 
   } catch (err) {
     res.status(500).json({ message: "Server error" });
