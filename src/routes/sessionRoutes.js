@@ -6,6 +6,7 @@ const protect = require("../middleware/authMiddleware");
 // ===============================
 // Create Session
 // ===============================
+
 router.post("/", protect, async (req, res) => {
   try {
     const {
@@ -13,11 +14,15 @@ router.post("/", protect, async (req, res) => {
       skill_topic,
       session_date,
       duration_minutes,
-      session_type,
       mode,
+      meeting_link,
       location,
-      meeting_link
+      session_type
     } = req.body;
+
+    if (!partner_id || !skill_topic || !session_date || !duration_minutes) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
 
     const { data, error } = await supabase
       .from("sessions")
@@ -28,18 +33,20 @@ router.post("/", protect, async (req, res) => {
           skill_topic,
           session_date,
           duration_minutes,
-          session_type: session_type || "one-on-one",
           mode: mode || "virtual",
-          location: mode === "in-person" ? location : null,
-          meeting_link: mode === "virtual" ? meeting_link : null,
+          meeting_link: meeting_link || null,
+          location: location || null,
+          session_type: session_type || "one-on-one",
           status: "pending"
         }
       ])
-      .select();
+      .select()
+      .single();
 
     if (error) return res.status(400).json(error);
 
-    res.json(data[0]);
+    res.status(201).json(data);
+
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
