@@ -16,6 +16,7 @@ const forumRoutes = require("./routes/forumRoutes");
 const matchRoutes = require("./routes/matchRoutes");
 const resourceRoutes = require("./routes/resourceRoutes");
 const skillRoutes = require("./routes/skillRoutes");
+const dashboardRoutes = require("./routes/dashboard");
 
 app.use("/auth", authRoutes);
 app.use("/profile", profileRoutes);   // ✅ FIXED HERE
@@ -25,6 +26,7 @@ app.use("/forum", forumRoutes);
 app.use("/matches", matchRoutes);
 app.use("/resources", resourceRoutes);
 app.use("/skills", skillRoutes);
+app.use("/dashboard", dashboardRoutes);
 
 const PORT = process.env.PORT || 5000;
 

@@ -7,6 +7,10 @@ const createPost = async (req, res) => {
   try {
     const { title, content } = req.body;
 
+    if (!title || !content) {
+      return res.status(400).json({ message: "Missing fields" });
+    }
+
     const { data, error } = await supabase
       .from("posts")
       .insert([
@@ -21,7 +25,8 @@ const createPost = async (req, res) => {
 
     if (error) return res.status(500).json(error);
 
-    res.json(data);
+    res.status(201).json(data);
+
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
@@ -39,13 +44,16 @@ const getPosts = async (req, res) => {
         title,
         content,
         created_at,
-        users (name)
+        users (
+          name
+        )
       `)
       .order("created_at", { ascending: false });
 
     if (error) return res.status(500).json(error);
 
     res.json(data);
+
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
